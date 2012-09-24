@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Text To Speech Example</string>
+    <string name="hint">Add something here</string>
+    <string name="speak_via_the_application">Speak via the application</string>
+    <string name="speak_via_a_service">Speak via a Service</string>
+    <string name="speak_via_an_intent_service">Speak via an Intent Service</string>
+</resources>
