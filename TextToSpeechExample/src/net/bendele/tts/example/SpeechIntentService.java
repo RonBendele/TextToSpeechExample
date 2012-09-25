@@ -32,9 +32,9 @@ public class SpeechIntentService extends IntentService implements
     private TextToSpeech tts;
     private AudioManager audioManager;
 
-    private void myLog (String msg){
-        if (DEBUG){
-            if (msg != ""){
+    private void myLog(String msg) {
+        if (DEBUG) {
+            if (msg != "") {
                 msg = " - " + msg;
             }
             String caller = Thread.currentThread().getStackTrace()[3]
@@ -49,15 +49,15 @@ public class SpeechIntentService extends IntentService implements
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        myLog ("");
+        myLog("");
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
-        text2speak = intent.getStringExtra("text");
+        text2speak = intent.getStringExtra(TEXT);
         tts = new TextToSpeech(getApplicationContext(), this);
     }
 
     @Override
     public void onInit(int status) {
-        myLog ("");
+        myLog("");
         if (status == TextToSpeech.SUCCESS) {
             // the call to set the utterance listener must be in the
             // onInit method (inside setTts()), in the SUCCESS check.
@@ -67,19 +67,19 @@ public class SpeechIntentService extends IntentService implements
             audioManager.requestAudioFocus(this,
                     AudioManager.STREAM_NOTIFICATION,
                     AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-            myLog ("text2speak = " + text2speak);
+            myLog("text2speak = " + text2speak);
             tts.speak(text2speak, TextToSpeech.QUEUE_FLUSH, myHashParams);
         } else {
-            myLog (" - FAILED");
+            myLog(" - FAILED");
         }
     }
 
     @SuppressLint("NewApi")
     @SuppressWarnings("deprecation")
     public void setTts() {
-        myLog ("");
+        myLog("");
         if (Build.VERSION.SDK_INT >= 15) {
-            myLog ("Build.VERSION.SDK_INT >= 15");
+            myLog("Build.VERSION.SDK_INT >= 15");
             tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                 @Override
                 public void onDone(String utteranceId) {
@@ -95,7 +95,7 @@ public class SpeechIntentService extends IntentService implements
                 }
             });
         } else {
-            myLog ("Build.VERSION.SDK_INT < 15");
+            myLog("Build.VERSION.SDK_INT < 15");
             tts.setOnUtteranceCompletedListener(new OnUtteranceCompletedListener() {
                 @Override
                 public void onUtteranceCompleted(String utteranceId) {
@@ -106,26 +106,35 @@ public class SpeechIntentService extends IntentService implements
     }
 
     private void onDoneSpeaking(String utteranceId) {
-        myLog ("");
+        myLog("");
         if (utteranceId.equals(DONE) || utteranceId == DONE) {
             audioManager.abandonAudioFocus(this);
-            stopSelf();
+            if (tts != null) {
+                tts.stop();
+                tts.shutdown();
+            }
         }
     }
 
-    @Override
-    public void onDestroy() {
-        myLog ("-----");
-        if (tts != null) {
-            tts.stop();
-            tts.shutdown();
-        }
-        super.onDestroy();
-    }
-
+    /*
+     * Need this because of the 2 audioManager calls They require a listener and
+     * the listener requires this.
+     */
     @Override
     public void onAudioFocusChange(int focusChange) {
-
+        // we would react to other apps requesting focus or releasing or
+        // releasing it
     }
+
+    /*
+     * If you override onDestroy(), and then call this intentService multiple
+     * times in a row, it won't speak on the 2nd and subsequent calls. Without
+     * overriding onDestroy(), it will speak every time. I moved the cleanup
+     * that I would normally do in onDestroy() to onDoneSpeaking().
+     *
+     * Note that the IntentService documentation says "When all requests have
+     * been handled, the IntentService stops itself, so you should not call
+     * stopSelf()."
+     */
 
 }

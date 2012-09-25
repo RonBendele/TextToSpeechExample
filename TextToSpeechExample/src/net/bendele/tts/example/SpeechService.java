@@ -39,9 +39,9 @@ public class SpeechService extends Service implements OnInitListener,
     private String text2speak;
     private boolean initialize = false;
 
-    private void myLog (String msg){
-        if (DEBUG){
-            if (msg != ""){
+    private void myLog(String msg) {
+        if (DEBUG) {
+            if (msg != "") {
                 msg = " - " + msg;
             }
             String caller = Thread.currentThread().getStackTrace()[3]
@@ -52,12 +52,12 @@ public class SpeechService extends Service implements OnInitListener,
 
     @Override
     public void onCreate() {
-        myLog ("");
+        myLog("");
     }
 
     @Override
     public void onStart(Intent intent, int startid) {
-        myLog ("");
+        myLog("");
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         initialize = intent.getBooleanExtra(INITIALIZE, false);
         text2speak = intent.getStringExtra(TEXT);
@@ -66,7 +66,7 @@ public class SpeechService extends Service implements OnInitListener,
 
     @Override
     public void onInit(int status) {
-        myLog ("");
+        myLog("");
         if (status == TextToSpeech.SUCCESS) {
             // the call to set the utterance listener must be in the
             // onInit method (inside setTts()), in the SUCCESS check.
@@ -74,13 +74,12 @@ public class SpeechService extends Service implements OnInitListener,
             HashMap<String, String> myHashParams = new HashMap<String, String>();
             myHashParams.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, DONE);
             if (initialize) {
-                // tts.isLanguageAvailable(Locale.getDefault());
                 tts.playSilence(1, TextToSpeech.QUEUE_ADD, myHashParams);
             } else {
                 audioManager.requestAudioFocus(this,
                         AudioManager.STREAM_NOTIFICATION,
                         AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-                myLog ("text2speak = " + text2speak);
+                myLog("text2speak = " + text2speak);
                 tts.speak(text2speak, TextToSpeech.QUEUE_FLUSH, myHashParams);
             }
         } else {
@@ -93,9 +92,9 @@ public class SpeechService extends Service implements OnInitListener,
     @SuppressLint("NewApi")
     @SuppressWarnings("deprecation")
     public void setTts() {
-        myLog ("");
+        myLog("");
         if (Build.VERSION.SDK_INT >= 15) {
-            myLog ("Build.VERSION.SDK_INT >= 15");
+            myLog("Build.VERSION.SDK_INT >= 15");
             tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                 @Override
                 public void onDone(String utteranceId) {
@@ -111,7 +110,7 @@ public class SpeechService extends Service implements OnInitListener,
                 }
             });
         } else {
-            myLog ("Build.VERSION.SDK_INT < 15");
+            myLog("Build.VERSION.SDK_INT < 15");
             tts.setOnUtteranceCompletedListener(new OnUtteranceCompletedListener() {
                 @Override
                 public void onUtteranceCompleted(String utteranceId) {
@@ -122,7 +121,7 @@ public class SpeechService extends Service implements OnInitListener,
     }
 
     private void onDoneSpeaking(String utteranceId) {
-        myLog ("");
+        myLog("");
         if (utteranceId.equals(DONE) || utteranceId == DONE) {
             audioManager.abandonAudioFocus(this);
             stopSelf();
@@ -131,7 +130,7 @@ public class SpeechService extends Service implements OnInitListener,
 
     @Override
     public void onDestroy() {
-        myLog ("-----");
+        myLog("-----");
         if (tts != null) {
             tts.stop();
             tts.shutdown();
@@ -143,16 +142,14 @@ public class SpeechService extends Service implements OnInitListener,
         return null;
     }
 
+    /*
+     * Need this because of the 2 audioManager calls They require a listener and
+     * the listener requires this.
+     */
     @Override
     public void onAudioFocusChange(int focusChange) {
-        /*
-         * Need this because of the 2 autoManager calls They require a listener
-         * and the listener requires this.
-         */
+        // we would react to other apps requesting focus or releasing or
+        // releasing it
     }
 
-    /*
-     * Can do more by looking at this link:
-     * http://developer.android.com/resources/articles/tts.html
-     */
 }

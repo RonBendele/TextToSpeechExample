@@ -1,1 +1,3 @@
-Text2SpeechExample is a test program for TTS.
+I use Text2SpeechExample as a test bed for Android TextToSpeech. It illustrates how to use TTS from an Activity, Service and an IntentService.
+
+In the Activity I chose to instantiate a TextToSpeech object each time the user presses the Speak button and then in onDoneSpeaking(), stop/shutdown the object. I did it this to illustrate how to not hang on to resources any longer than absolutely necessary. Because of this choice, the speaking actually takes place in onInit(), rather than speak() (or anywhere else.)

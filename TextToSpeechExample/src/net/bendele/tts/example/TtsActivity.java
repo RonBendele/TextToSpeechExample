@@ -5,7 +5,6 @@ import java.util.HashMap;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -25,6 +24,17 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+/*
+ * This is a test bed for my Run / Walk Intervals Timer application which
+ * uses TextToSpeech.
+ *
+ * I chose to instantiate a TextToSpeech object each time the user presses
+ * the Speak button and then in onDoneSpeaking(), stop/shutdown the object.
+ * I don't want to hang on to resources any longer than absolutely necessary.
+ * Because of this choice, the speaking actually takes place in onInit(),
+ * rather than speak().
+ */
 
 public class TtsActivity extends Activity implements OnInitListener,
         OnAudioFocusChangeListener {
@@ -134,8 +144,10 @@ public class TtsActivity extends Activity implements OnInitListener,
          * The next 3 lines are my way of determining if TTS is properly
          * installed. Call the SpeechService through an Intent, passing it an
          * Initialize variable. If it does not initialize, the service sends out
-         * a broadcast, picked up here in a broadcastreceiver
-         * ttsNotAvailableReceiver.
+         * a broadcast, picked up here in a BroadcastReceiver called
+         * ttsNotAvailableReceiver. I do this here in the onCreate() of the main
+         * activity so I can set a flag to prevent the user from trying to use
+         * TTS again.
          */
         Intent intent = new Intent(this, SpeechService.class);
         intent.putExtra(SpeechService.INITIALIZE, true);
@@ -167,6 +179,10 @@ public class TtsActivity extends Activity implements OnInitListener,
         }
     };
 
+    /*
+     * We would normally set a flag, but for simplicity's sake I just disable
+     * all the widgets the user can see.
+     */
     private void ttsNotAvailable() {
         inputText.setEnabled(false);
         appButton.setEnabled(false);
@@ -176,6 +192,7 @@ public class TtsActivity extends Activity implements OnInitListener,
 
     private void speak() {
         myLog("");
+        // the actual speaking takes place in onInit
         tts = new TextToSpeech(this, this);
     }
 
@@ -190,8 +207,6 @@ public class TtsActivity extends Activity implements OnInitListener,
         myLog(what);
         Intent intent = new Intent(this, SpeechIntentService.class);
         intent.putExtra(SpeechIntentService.TEXT, what);
-        audioManager.requestAudioFocus(this, AudioManager.STREAM_NOTIFICATION,
-                AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
         startService(intent);
     }
 
@@ -264,6 +279,7 @@ public class TtsActivity extends Activity implements OnInitListener,
         if (status == TextToSpeech.SUCCESS) {
             // the call to set the utterance listener must be in the
             // onInit method (inside setTts()), in the SUCCESS check.
+            setTts();
             HashMap<String, String> myHashParams = new HashMap<String, String>();
             myHashParams.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, DONE);
             audioManager.requestAudioFocus(this,
@@ -313,24 +329,35 @@ public class TtsActivity extends Activity implements OnInitListener,
         myLog("");
         if (utteranceId.equals(DONE) || utteranceId == DONE) {
             audioManager.abandonAudioFocus(this);
+            // moved stop() & shutdown() from onDestroy to here because the user
+            // can press the speak button multiple times. I was getting a memory
+            // leak because I didn't have a one-to-one relationship with
+            // instantiating the TTS object and stopping/shutting it down. I
+            // don't get that leak by calling them here. This is a side-effect
+            // of my architecture decision.
+            if (tts != null) {
+                tts.stop();
+                tts.shutdown();
+            }
         }
     }
 
     @Override
     protected void onDestroy() {
         myLog("-----");
-        if (tts != null) {
-            tts.stop();
-            tts.shutdown();
-        }
         stopService(new Intent(this, SpeechService.class));
         unregisterReceiver(ttsNotAvailableReceiver);
         super.onDestroy();
     }
 
+    /*
+     * Need this because of the 2 audioManager calls They require a listener and
+     * the listener requires this.
+     */
     @Override
-    public void onAudioFocusChange(int arg0) {
-
+    public void onAudioFocusChange(int focusChange) {
+        // we would react to other apps requesting focus or releasing or
+        // releasing it
     }
 
 }
