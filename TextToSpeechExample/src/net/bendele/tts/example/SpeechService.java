@@ -20,7 +20,7 @@ public class SpeechService extends Service implements OnInitListener,
         OnAudioFocusChangeListener {
 
     // Logging constants
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     private static final String BENDELE = "BENDELE";
     private static final String CLASS = "SpeechService - ";
 
